@@ -12,7 +12,6 @@ This works if for any new device a new log is created that does not link to any 
 
 Basically, every log-in is an append-only feed, a new log; replication is therefore simple.
 
-
 ```js
 var h = require('hyperlog')
 var sublevel = require('level-sublevel')
@@ -54,40 +53,42 @@ function replicate(){
   var s2 = log2.replicate()
   var s3 = pub.replicate()
 
-  // note that he pub log is a pub log for this uxer only
-  // here we are skipping the part where the pub identifies the logs as uxer, easily done
+  // Note that the pub log is a replication log for this uxer only, every followed uxer has they own.
+  // We are skipping the part where the pub identifies the logs as uxer, easily done
   
   var logogol = pub.createReadStream({live: true})
+  
   console.log('#### Peer changefeed (shows replication of all 4 entries)\n')
+  
   logogol.on('data', function(node){
     console.log(node)//.value.toString())
   })
+
   s2.pipe(s3).pipe(s2)
-  //s1.pipe(s3).pipe(s1)//.pipe(s1)
+  
   s3.on('end', function(){
     var s3a = pub.replicate()
     s1.pipe(s3a).pipe(s1)
     s3a.on('end', function(){
       pub.heads(function(err, res){
-        //if(res.length)res.forEach(function(e){console.log(e.value.toString())})
         // now we replicate again, the pub performing it's role
 
         var s1 = log1.replicate()
         var s2 = log2.replicate()
         var s3 = pub.replicate()
         var logogol = pub.createReadStream({live: true})
-        logogol.on('data', function(node){
-          //console.log(node)//.value.toString())
-        })
+        
         s2.pipe(s3).pipe(s2)
-        //s1.pipe(s3).pipe(s1)//.pipe(s1)
+
         s3.on('end', function(){
           var s3a = pub.replicate()
           s1.pipe(s3a).pipe(s1)
           s3a.on('end', function(){
-          console.log('\n####################')
-          console.log('replication complete')
-          console.log('####################\n')
+
+            console.log('\n####################')
+            console.log('replication complete')
+            console.log('####################\n')
+            
             pub.heads(function(err, res){
               // pub heads
               pub.heads(function(err, res){
@@ -101,8 +102,7 @@ function replicate(){
                   })
                 }
               })
-              // now we replicate again, the pub performing it's role
-              // now we check to make sure log1 and log2 are virtual replications of each other
+
               log1.heads(function(err, res){
                 if(res.length){
                   res.forEach(function(e,i ){
@@ -114,6 +114,7 @@ function replicate(){
                   })
                 }
               })
+
               log2.heads(function(err, res){
                 if(res.length){
                   res.forEach(function(e, i){
